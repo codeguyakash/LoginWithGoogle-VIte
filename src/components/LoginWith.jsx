@@ -14,8 +14,9 @@ const LoginWith = () => {
   const [password, setPassword] = useState("");
   const [mobileNumber, setMobileNumber] = useState();
   const [message, setMessage] = useState("");
-  const [user, setUser] = useState("");
+  const [userData, setUserData] = useState("");
   const [verifyOtp, setVerifyOtp] = useState("");
+  const [showOtpInput, setShowOtpInput] = useState(true);
 
   const loginHandler = async (event) => {
     event.preventDefault();
@@ -42,16 +43,12 @@ const LoginWith = () => {
     try {
       const res = await signInWithPopup(auth, googleProvider);
       const user = res._tokenResponse.refreshToken;
-
-      let username = res.user.displayName;
-      let email = res.user.email;
-      let photoUrl = res.user.photoURL;
-
+      const { email, displayName, photoURL } = res.user;
       if (user) {
         localStorage.setItem("refreshToken-React", user);
         localStorage.setItem("user-email", email);
-        localStorage.setItem("user-name", username);
-        localStorage.setItem("user-photo", photoUrl);
+        localStorage.setItem("user-name", displayName);
+        localStorage.setItem("user-photo", photoURL);
         navigate("/dashboard");
       }
     } catch (error) {
@@ -61,13 +58,14 @@ const LoginWith = () => {
   // ---------------------sign-with-opt----------------------------
   const signInWithPhoneHandler = async (event) => {
     event.preventDefault();
-    const recaptchaVerifier = new RecaptchaVerifier(auth, "recaptch", { });
+    const recaptchaVerifier = new RecaptchaVerifier(auth, "recaptch", {});
     await signInWithPhoneNumber(auth, mobileNumber, recaptchaVerifier)
       .then((confirmationResult) => {
         if (confirmationResult.verificationId) {
           setMessage("OTP Sent Success");
+          setShowOtpInput(false);
         }
-        setUser(confirmationResult);
+        setUserData(confirmationResult);
       })
       .catch((error) => {
         setMessage(error.message);
@@ -77,9 +75,14 @@ const LoginWith = () => {
   const verifyOtpHandler = async (event) => {
     event.preventDefault();
     try {
-      const res = await user.confirm(verifyOtp);
-      if (res._tokenResponse.refreshToken) {
+      const res = await userData.confirm(verifyOtp);
+      const user = res._tokenResponse.refreshToken;
+      if (user) {
         setMessage("Login Success");
+        localStorage.setItem("refreshToken-React", user);
+        localStorage.setItem("phoneNumber", res.user.phoneNumber);
+        navigate("/dashboard");
+        setShowOtpInput(true);
       }
     } catch (error) {
       setMessage(error.message);
@@ -88,10 +91,13 @@ const LoginWith = () => {
 
   return (
     <>
+      <div className="text-2xl bg-green-600 text-white text-center py-3 mb-4 cursor-pointer">
+        Home
+      </div>
       <div className="text-red-500 text-center font-semibold mt-3">
         {message}
       </div>
-      <form className="mx-10 my-10">
+      <form className="mx-10">
         <h1 className="text-2xl text-center">Log In</h1>
         <div className="flex items-center justify-center flex-col">
           <label className="block ">
@@ -101,8 +107,9 @@ const LoginWith = () => {
             <input
               onChange={(e) => setEmail(e.target.value)}
               type="email"
-              className="block w-full px-3 py-2 bg-white border rounded-md text-1xl md:w-96
+              className="block px-3 py-2 bg-white border rounded-md text-1xl w-96 md:w-96
     "
+              required
             />
           </label>
           <label className="block my-4">
@@ -112,14 +119,15 @@ const LoginWith = () => {
             <input
               onChange={(e) => setPassword(e.target.value)}
               type="password"
-              className="block w-full px-3 py-2 bg-white border  rounded-md text-1xl md:w-96"
+              className="block px-3 py-2 bg-white border  rounded-md text-1xl w-96 md:w-96"
+              required
             />
           </label>
         </div>
         <div className="flex items-center justify-center">
           <button
             onClick={loginHandler}
-            className="text-1xl font-medium bg-blue-500 py-2 px-5 rounded-md  text-white w-full md:w-96"
+            className="text-1xl font-medium bg-blue-500 py-2 px-5 rounded-md  text-white w-96 md:w-96"
           >
             Login
           </button>
@@ -150,37 +158,48 @@ const LoginWith = () => {
           </div>
         </div>
       </form>
+      <div className="w-52 h-[3px] rounded-lg m-auto bg-gray-200 my-3"></div>
       <form className="flex flex-col items-center justify-center">
         <label className="block my-4">
           <span className="block text-1xl font-medium text-slate-700">
             Mobile Number
           </span>
           <input
-            onChange={(e) => setMobileNumber(`+91${e.target.value}`)}
+            required
+            onChange={(e) => setMobileNumber(`+44${e.target.value}`)}
             type="text"
-            className="block w-full px-3 py-2 bg-white border  rounded-md text-1xl md:w-96"
+            className="block px-3 py-2 bg-white border  rounded-md text-1xl w-96 md:w-96"
           />
         </label>
         <button
           onClick={signInWithPhoneHandler}
-          className="text-1xl font-medium bg-blue-500 py-2 px-5 rounded-md  text-white w-50 md:w-96"
+          className="text-1xl font-medium bg-blue-500 py-2 px-5 rounded-md  text-white w-96 md:w-96"
         >
           Send OTP
         </button>
-        <label className="block my-4">
-          <span className="block text-1xl font-medium text-slate-700">OTP</span>
-          <input
-            onChange={(e) => setVerifyOtp(e.target.value)}
-            type="text"
-            className="block w-full px-3 py-2 bg-white border  rounded-md text-1xl md:w-96"
-          />
-        </label>
-        <button
-          onClick={verifyOtpHandler}
-          className="text-1xl font-medium bg-green-500 py-2 px-5 rounded-md  text-white w-50 md:w-96"
-        >
-          Verify OTP
-        </button>
+        {showOtpInput ? (
+          <div></div>
+        ) : (
+          <div>
+            <label className="block my-4">
+              <span className="block text-1xl font-medium text-slate-700">
+                OTP
+              </span>
+              <input
+                onChange={(e) => setVerifyOtp(e.target.value)}
+                type="text"
+                className="block w-full px-3 py-2 bg-white border  rounded-md text-1xl md:w-96"
+                required
+              />
+            </label>
+            <button
+              onClick={verifyOtpHandler}
+              className="text-1xl font-medium bg-green-500 py-2 px-5 rounded-md  text-white w-96 md:w-96"
+            >
+              Verify OTP
+            </button>
+          </div>
+        )}
       </form>
       <div className="flex items-center justify-center my-5">
         <div id="recaptch"></div>
