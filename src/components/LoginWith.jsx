@@ -7,6 +7,7 @@ import {
 } from "firebase/auth";
 import { auth, googleProvider } from "../Auth/firebase";
 import { useNavigate } from "react-router-dom";
+import OnlineStatus from "./OnlineStatus";
 
 const LoginWith = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const LoginWith = () => {
   const [userData, setUserData] = useState("");
   const [verifyOtp, setVerifyOtp] = useState("");
   const [showOtpInput, setShowOtpInput] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   const loginHandler = async (event) => {
     event.preventDefault();
@@ -41,6 +43,7 @@ const LoginWith = () => {
   const loginWithGoogleHandler = async (event) => {
     event.preventDefault();
     try {
+      setIsLoading(true);
       const res = await signInWithPopup(auth, googleProvider);
       const user = res._tokenResponse.refreshToken;
       const { email, displayName, photoURL } = res.user;
@@ -51,6 +54,7 @@ const LoginWith = () => {
         localStorage.setItem("user-photo", photoURL);
         navigate("/dashboard");
       }
+      setIsLoading(false);
     } catch (error) {
       console.log(error.message);
     }
@@ -58,6 +62,7 @@ const LoginWith = () => {
   // ---------------------sign-with-opt----------------------------
   const signInWithPhoneHandler = async (event) => {
     event.preventDefault();
+    setIsLoading(true);
     const recaptchaVerifier = new RecaptchaVerifier(auth, "recaptch", {});
     await signInWithPhoneNumber(auth, mobileNumber, recaptchaVerifier)
       .then((confirmationResult) => {
@@ -66,6 +71,7 @@ const LoginWith = () => {
           setShowOtpInput(false);
         }
         setUserData(confirmationResult);
+        setIsLoading(false);
       })
       .catch((error) => {
         setMessage(error.message);
@@ -73,6 +79,7 @@ const LoginWith = () => {
       });
   };
   const verifyOtpHandler = async (event) => {
+    setIsLoading(true);
     event.preventDefault();
     try {
       const res = await userData.confirm(verifyOtp);
@@ -84,6 +91,7 @@ const LoginWith = () => {
         navigate("/dashboard");
         setShowOtpInput(true);
       }
+      setIsLoading(false);
     } catch (error) {
       setMessage(error.message);
     }
@@ -91,11 +99,11 @@ const LoginWith = () => {
 
   return (
     <>
-      <div className="text-2xl bg-green-600 text-white text-center py-3 mb-4 cursor-pointer">
-        Home
+      <div className="text-2xl bg-gray-300 text-white text-center py-3 mb-4 cursor-pointer">
+        <OnlineStatus />
       </div>
       <div className="text-red-500 text-center font-semibold mt-3">
-        {message}
+        {isLoading ? "Loading..." : message}
       </div>
       <form className="mx-10">
         <h1 className="text-2xl text-center">Log In</h1>
@@ -166,7 +174,7 @@ const LoginWith = () => {
           </span>
           <input
             required
-            onChange={(e) => setMobileNumber(`+44${e.target.value}`)}
+            onChange={(e) => setMobileNumber(`+91${e.target.value}`)}
             type="text"
             className="block px-3 py-2 bg-white border  rounded-md text-1xl w-96 md:w-96"
           />

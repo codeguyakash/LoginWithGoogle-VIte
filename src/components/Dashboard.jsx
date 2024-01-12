@@ -1,7 +1,12 @@
 import { useNavigate } from "react-router-dom";
+import Todos from "./Todos";
+import { db } from "./../Auth/firebase";
+import { set, ref, get, child } from "firebase/database";
+import { useEffect, useState } from "react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [todo, setTodo] = useState();
   let email = localStorage.getItem("user-email");
   let name = localStorage.getItem("user-name");
   let photoURL = localStorage.getItem("user-photo");
@@ -14,6 +19,33 @@ const Dashboard = () => {
     localStorage.removeItem("phoneNumber");
     navigate("/");
   };
+
+  const newTodo = {
+    title: "New Todo Task",
+    description: "Details about the task",
+    status: "incomplete",
+    timestamp: Date.now(),
+    date: "2024-01-15",
+  };
+  const instertData = async () => {
+    await set(ref(db, "todos/" + "userId6"), {
+      title: "title",
+      description: "description",
+      statu: true,
+    });
+  };
+  useEffect(() => {
+    const dbRef = ref(db);
+    get(child(dbRef, `todos/`))
+      .then((snapshot) => {
+        setTodo(snapshot.val());
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }, []);
+  console.log(todo);
+
   return (
     <>
       <div
@@ -41,6 +73,15 @@ const Dashboard = () => {
       <h2 className="text-1xl text-gray-700 font-semibold text-center">
         {email || phoneNumber}
       </h2>
+      <div className="flex items-center justify-center flex-col my-3">
+        <button
+          className="text-2xl border-2 border-gray-400 hover:bg-gray-200 px-3 py-2 rounded-md"
+          onClick={instertData}
+        >
+          add todo
+        </button>
+        <Todos />
+      </div>
     </>
   );
 };
